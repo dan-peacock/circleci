@@ -105,24 +105,24 @@ jobs:
 workflows:
   plan_approve_apply:
     jobs:
-    - setup-vault-and-load-secrets:
-          context:
-            - circleci-vault-demo
-      - plan-apply
-      - hold-apply:
-          type: approval
-          requires:
-            - plan-apply
-      - apply:
-          requires:
-            - hold-apply
-      - plan-destroy:
-          requires:
-            - apply
-      - hold-destroy:
-          type: approval
-          requires:
-            - plan-destroy
-      - destroy:
-          requires:
-            - hold-destroy
+      - setup-vault-and-load-secrets:
+            context:
+              - circleci-vault-demo
+        - plan-apply
+        - hold-apply:
+            type: approval
+            requires:
+              - plan-apply
+        - apply:
+            requires:
+              - hold-apply
+        - plan-destroy:
+            requires:
+              - apply
+        - hold-destroy:
+            type: approval
+            requires:
+              - plan-destroy
+        - destroy:
+            requires:
+              - hold-destroy
