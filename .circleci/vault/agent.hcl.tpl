@@ -8,6 +8,7 @@ vault {
 }
 auto_auth {
   method "jwt" {
+    namespace = "admin"
     exit_on_err = true
     config = {
       role = "${VAULT_ROLE}"
