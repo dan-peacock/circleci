@@ -1,81 +1,129 @@
 version: 2
-
+commands:
+  install-vault:
+    steps:
+      - run:
+          name: Install Vault and prereqs
+          command: |
+            vault -h && exit 0 || echo "Installing vault"
+            # only runs if vault command above fails
+            cd /tmp
+            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
+            unzip vault_1.12.2_linux_amd64.zip
+            sudo mv vault /usr/local/bin        
+            vault -h
+  vault-auto-auth:
+    description: "Use Vault auto auth to load secrets"
+    steps:
+      - run:
+          name: Auto-authenticate with Vault
+          command: |
+            # Write the CircleCI provided value to a file read by Vault
+            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
+            # Substitute the env vars in our context to render the Vault config file
+            sudo apt update && sudo apt install gettext-base
+            envsubst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
+            # This config indicates which secrets to collect and how to authenticate     
+            vault agent -config=.circleci/vault/agent.hcl
+      - run:
+          name: Set Environment Variables from Vault
+          command: |
+            # In order to properly expose values in Environment, we _source_ the shell values written by agent
+            source .circleci/vault/setenv
 jobs:
-  plan-apply:
-    working_directory: /tmp/project
+  setup-vault-and-load-secrets:
     docker:
-      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+      - image: cimg/base:2023.01
     steps:
       - checkout
+      - install-vault
+      - vault-auto-auth
       - run:
-          name: terraform init & plan
+          name: Use secrets retrieved from Vault in a subsequent step
           command: |
-            terraform init
-            terraform plan
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
-
-  apply:
-    docker:
-      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: terraform
-          command: |
-            terraform apply -auto-approve
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
-
-  plan-destroy:
-    docker:
-      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: terraform create destroy plan
-          command: |
-            terraform plan -destroy
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
-
-  destroy:
-    docker:
-      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: terraform destroy
-          command: |
-            terraform apply -auto-approve
+            echo "Username is $SECRET_DEMO_USERNAME, password is $SECRET_DEMO_PASSWORD"
 workflows:
-  version: 2
-  plan_approve_apply:
+  vault:
     jobs:
-      - plan-apply
-      - hold-apply:
-          type: approval
-          requires:
-            - plan-apply
-      - apply:
-          requires:
-            - hold-apply
-      - plan-destroy:
-          requires:
-            - apply
-      - hold-destroy:
-          type: approval
-          requires:
-            - plan-destroy
-      - destroy:
-          requires:
-            - hold-destroy
+      - setup-vault-and-load-secrets:
+          context:
+            - circleci-vault-demo
+# jobs:
+#   plan-apply:
+#     working_directory: /tmp/project
+#     docker:
+#       - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+#     steps:
+#       - checkout
+#       - run:
+#           name: terraform init & plan
+#           command: |
+#             terraform init
+#             terraform plan
+#       - persist_to_workspace:
+#           root: .
+#           paths:
+#             - .
+
+#   apply:
+#     docker:
+#       - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+#     steps:
+#       - attach_workspace:
+#           at: .
+#       - run:
+#           name: terraform
+#           command: |
+#             terraform apply -auto-approve
+#       - persist_to_workspace:
+#           root: .
+#           paths:
+#             - .
+
+#   plan-destroy:
+#     docker:
+#       - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+#     steps:
+#       - attach_workspace:
+#           at: .
+#       - run:
+#           name: terraform create destroy plan
+#           command: |
+#             terraform plan -destroy
+#       - persist_to_workspace:
+#           root: .
+#           paths:
+#             - .
+
+#   destroy:
+#     docker:
+#       - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+#     steps:
+#       - attach_workspace:
+#           at: .
+#       - run:
+#           name: terraform destroy
+#           command: |
+#             terraform apply -auto-approve
+# workflows:
+#   version: 2
+#   plan_approve_apply:
+#     jobs:
+#       - plan-apply
+#       - hold-apply:
+#           type: approval
+#           requires:
+#             - plan-apply
+#       - apply:
+#           requires:
+#             - hold-apply
+#       - plan-destroy:
+#           requires:
+#             - apply
+#       - hold-destroy:
+#           type: approval
+#           requires:
+#             - plan-destroy
+#       - destroy:
+#           requires:
+#             - hold-destroy
