@@ -12,6 +12,7 @@ commands:
             unzip vault_1.12.2_linux_amd64.zip
             sudo mv vault /usr/local/bin        
             vault -h
+            echo $VAULT_ROLE
   vault-auto-auth:
     description: "Use Vault auto auth to load secrets"
     steps:
