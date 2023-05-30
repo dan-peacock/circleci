@@ -33,7 +33,7 @@ commands:
             source .circleci/vault/setenv
 
 jobs:
-setup-vault-and-load-secrets:
+  setup-vault-and-load-secrets:
     docker:
       - image: cimg/base:2023.01
     steps:
