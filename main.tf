@@ -5,14 +5,10 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 4.4.0"
-      region = var.region
     }
   }
-
   required_version = ">= 1.2.0"
 }
-
-
 
 data "aws_ami" "amazon_linux" {
   most_recent = true
