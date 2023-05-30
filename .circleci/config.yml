@@ -101,8 +101,8 @@ setup-vault-and-load-secrets:
           name: terraform destroy
           command: |
             terraform apply -auto-approve
+            
 workflows:
-  version: 2
   plan_approve_apply:
     jobs:
     - setup-vault-and-load-secrets:
