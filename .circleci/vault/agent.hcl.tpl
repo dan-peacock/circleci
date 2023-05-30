@@ -10,7 +10,7 @@ auto_auth {
   method "jwt" {
     exit_on_err = true
     config = {
-      role = "${VAULT_ROLE}"
+      role = "circleci-demo"
       path = ".circleci/vault/token.json"
       remove_jwt_after_reading = false
     }
