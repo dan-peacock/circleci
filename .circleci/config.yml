@@ -31,8 +31,9 @@ commands:
           command: |
             # In order to properly expose values in Environment, we _source_ the shell values written by agent
             source .circleci/vault/setenv
+
 jobs:
-  setup-vault-and-load-secrets:
+setup-vault-and-load-secrets:
     docker:
       - image: cimg/base:2023.01
     steps:
@@ -43,13 +44,7 @@ jobs:
           name: Use secrets retrieved from Vault in a subsequent step
           command: |
             echo "Username is $SECRET_DEMO_USERNAME, password is $SECRET_DEMO_PASSWORD"
-workflows:
-  vault:
-    jobs:
-      - setup-vault-and-load-secrets:
-          context:
-            - circleci-vault-demo
-jobs:
+
   plan-apply:
     working_directory: /tmp/project
     docker:
@@ -110,6 +105,9 @@ workflows:
   version: 2
   plan_approve_apply:
     jobs:
+    - setup-vault-and-load-secrets:
+          context:
+            - circleci-vault-demo
       - plan-apply
       - hold-apply:
           type: approval
